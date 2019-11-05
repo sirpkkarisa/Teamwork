@@ -5,7 +5,7 @@ module.exports = (req, res, next) => {
     const token = req.headers.authorization.split(' ')[1];
     const decodedToken = jwt.verify(
       token,
-      'HEY_DO_NOT_HACK_THIS_RANDOM_TOKEN_STRING_BECAUSE_IF_YOU_DO_I_WILL_GET_YOU',
+      process.env.TOKEN,
     );
     const { employeeId } = decodedToken;
     if (req.body.id && req.body.id !== employeeId) {

@@ -116,8 +116,8 @@ exports.signIn = (req, res) => {
               const id = employee.rows.map((data) => data.id);
               const token = jwt.sign(
                 { employeeId: id },
-                'HEY_DO_NOT_HACK_THIS_RANDOM_TOKEN_STRING_BECAUSE_IF_YOU_DO_I_WILL_GET_YOU',
-                { expiresIn: '24h' },
+                process.env.TOKEN,
+                { expiresIn: '1h' },
               );
               return res.status(200)
                 .json({
@@ -130,7 +130,7 @@ exports.signIn = (req, res) => {
             (error) => {
               res.status(500)
                 .json({
-                  error: `Here ${error}`,
+                  error,
                 });
             },
           );
@@ -140,7 +140,7 @@ exports.signIn = (req, res) => {
       (error) => {
         res.status(500)
           .json({
-            error: `This ${error}`,
+            error,
           });
       },
     );
