@@ -23,17 +23,18 @@ pool.connect()
 exports.createTables = () => {
   const queryText = `CREATE TABLE IF NOT EXISTS
                     employees(
-                        id UUID,
-                        firstname VARCHAR(255) NOT NULL,
-                        lastname VARCHAR(255) NOT NULL,
+                        employee_id UUID,
+                        first_name VARCHAR(255) NOT NULL,
+                        last_name VARCHAR(255) NOT NULL,
                         email VARCHAR(255) NOT NULL,
                         password VARCHAR(255) NOT NULL,
                         gender VARCHAR(255) NOT NULL,
                         job_role VARCHAR(255) NOT NULL,
                         department VARCHAR(255) NOT NULL,
                         address VARCHAR(255) NOT NULL,
-                        PRIMARY KEY(id),
-                        UNIQUE(id),
+                        added_on TIMESTAMP DEFAULT NOW(),
+                        PRIMARY KEY(employee_id),
+                        UNIQUE(employee_id),
                         UNIQUE(email)
                     );
     `;
@@ -48,8 +49,29 @@ exports.createTables = () => {
       },
     );
 };
+const emailIsValid = (inputEmail) => {
+  const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  if (inputEmail.match(pattern) !== null) {
+    return true;
+  }
+  return false;
+};
+const passwordIsStrong = (passInput) => {
+  const pattern = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{6,})');
+  if (passInput.match(pattern)) {
+    return true;
+  }
+  return false;
+};
+const isNotNull = (fName, lName, eMail, pass, sex, job, dept, addr) => {
+  if (fName === undefined && lName === undefined && pass === undefined && sex
+     === undefined && job === undefined && dept === undefined && addr === undefined) {
+    return false;
+  }
+  return true;
+};
 exports.createEmployee = (req, res) => {
-  const id = uuid.v4();
+  const employeeId = uuid.v4();
   const { firstname } = req.body;
   const { lastname } = req.body;
   const { email } = req.body;
@@ -59,12 +81,30 @@ exports.createEmployee = (req, res) => {
   const { department } = req.body;
   const { address } = req.body;
 
+  // if (isNotNull(firstname, lastname, email, password, gender, jobRole, department, address)) {
+  //   return res.status(400)
+  //     .json({
+  //       error: 'All fields are required',
+  //     });
+  // }
+  if (!emailIsValid(email)) {
+    return res.status(400)
+      .json({
+        error: 'Invalid email',
+      });
+  }
+  if (!passwordIsStrong(password)) {
+    return res.status(400)
+      .json({
+        error: 'Weak password',
+      });
+  }
   bcrypt.hash(password, 10)
     .then(
       (hash) => {
-        pool.query('INSERT INTO employees(id,firstname,lastname,email,password,gender,job_role,department,address) '
+        pool.query('INSERT INTO employees(employee_id,first_name,last_name,email,password,gender,job_role,department,address) '
   + 'VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-        [id, firstname, lastname, email, hash, gender, jobRole, department, address])
+        [employeeId, firstname, lastname, email, hash, gender, jobRole, department, address])
           .then(
             () => {
               res.status(201)
@@ -93,15 +133,15 @@ exports.createEmployee = (req, res) => {
 exports.signIn = (req, res) => {
   pool.query('SELECT * FROM employees WHERE email=$1', [req.body.email])
     .then(
-      (employee) => {
-        if (!employee.rows) {
+      ({ rows }) => {
+        if (!rows) {
           return res.status(401)
             .json({
-              error: new Error('User not found'),
+              error: new Error('Auth Failed'),
             });
         }
         let hash = '';
-        employee.rows.forEach((data) => {
+        rows.forEach((data) => {
           hash += data.password;
         });
         return bcrypt.compare(req.body.password, hash)
@@ -113,7 +153,8 @@ exports.signIn = (req, res) => {
                     error: new Error('Incorrect cridentials'),
                   });
               }
-              const id = employee.rows.map((data) => data.id);
+              let id = '';
+              rows.forEach((data) => { id += data.employee_id; });
               const token = jwt.sign(
                 { employeeId: id },
                 process.env.TOKEN,
@@ -121,8 +162,11 @@ exports.signIn = (req, res) => {
               );
               return res.status(200)
                 .json({
-                  employeeId: id,
-                  token,
+                  status: 'success',
+                  data: {
+                    employeeId: id,
+                    token,
+                  },
                 });
             },
           )

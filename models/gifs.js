@@ -17,11 +17,12 @@ exports.createGifTable = () => {
   pool.query(
     `CREATE TABLE IF NOT EXISTS
     gifs(
-        id UUID,
-        imageTitle VARCHAR(255) NOT NULL,
-        imageUrl VARCHAR(255) NOT NULL,
-        PRIMARY KEY(id),
-        UNIQUE(id)
+        gif_id UUID,
+        image_title VARCHAR(255) NOT NULL,
+        image_url VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        PRIMARY KEY(gif_id),
+        UNIQUE(gif_id)
     );
     `,
   ).then(
@@ -37,18 +38,18 @@ exports.createGifTable = () => {
 exports.createGif = (req, res) => {
   cloudinary.uploader.upload(req.file.path,
     (result) => {
-      const id = uuid.v4();
+      const gifId = uuid.v4();
       const { imageTitle } = req.body;
       const imageUrl = result.secure_url;
 
-      pool.query('INSERT INTO gifs VALUES($1,$2,$3)', [id, imageTitle, imageUrl])
+      pool.query('INSERT INTO gifs VALUES($1,$2,$3)', [gifId, imageTitle, imageUrl])
         .then(
           () => {
             res.status(201)
               .json({
                 status: 'success',
                 data: {
-                  gifId: id,
+                  gifId,
                   message: 'GIF image successfully posted',
                   title: imageTitle,
                   imageUrl,
@@ -66,8 +67,8 @@ exports.createGif = (req, res) => {
     });
 };
 exports.deleteOne = (req, res) => {
-  const { id } = req.params;
-  pool.query('DELETE FROM gifs WHERE id=$1', [id])
+  const { gifId } = req.params;
+  pool.query('DELETE FROM gifs WHERE gif_id=$1', [gifId])
     .then(
       () => {
         res.status(200)
@@ -88,8 +89,8 @@ exports.deleteOne = (req, res) => {
     );
 };
 exports.getOneGif = (req, res) => {
-  const { id } = req.params;
-  pool.query('SELECT * FROM gifs WHERE id=$1', [id])
+  const { gifId } = req.params;
+  pool.query('SELECT * FROM gifs WHERE gif_id=$1', [gifId])
     .then(
       ({ rows }) => {
         const data = rows.map((results) => results);
@@ -110,10 +111,11 @@ exports.getOneGif = (req, res) => {
 };
 exports.commentsTable = () => {
   pool.query(`CREATE TABLE IF NOT EXISTS
-        gifComments(
+        gif_comments(
             comment_id UUID,
-            gif_id UUID REFERENCES gifs(id),
+            gif_id UUID REFERENCES gifs(gif_id) ON DELETE CASCADE,
             comment TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
             PRIMARY KEY(comment_id)
         )
 `).then(
@@ -130,10 +132,10 @@ exports.commentToGif = (req, res) => {
   const { gifId } = req.params;
   const commentId = uuid.v4();
   const { comment } = req.body;
-  pool.query('INSERT INTO gifcomments VALUES($1,$2,$3)', [commentId, gifId, comment])
+  pool.query('INSERT INTO gif_comments VALUES($1,$2,$3)', [commentId, gifId, comment])
     .then(
       () => {
-        pool.query('SELECT imageTitle FROM gifs WHERE id=$1', [gifId])
+        pool.query('SELECT image_title FROM gifs WHERE gif_id=$1', [gifId])
           .then(
             ({ rows }) => {
               res.status(200)
