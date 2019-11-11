@@ -6,4 +6,4 @@ node_js:
   - 13
 
 script:
-  - npm run test:coveralls
+  - 
