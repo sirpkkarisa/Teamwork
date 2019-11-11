@@ -23,13 +23,13 @@ const passwordIsStrong = (passInput) => {
   }
   return false;
 };
-const isNotNull = (fName, lName, eMail, pass, sex, job, dept, addr) => {
-  if (fName === undefined && lName === undefined && pass === undefined && sex
-       === undefined && job === undefined && dept === undefined && addr === undefined) {
-    return false;
-  }
-  return true;
-};
+// const isNotNull = (fName, lName, eMail, pass, sex, job, dept, addr) => {
+//   if (fName === undefined && lName === undefined && pass === undefined && sex
+//        === undefined && job === undefined && dept === undefined && addr === undefined) {
+//     return false;
+//   }
+//   return true;
+// };
 exports.createEmployee = (req, res) => {
   const employeeId = uuid.v4();
   const { firstname } = req.body;
