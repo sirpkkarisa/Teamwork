@@ -29,7 +29,7 @@
     "eslint-plugin-react-hooks": "^2.2.0"
   },
   "dependencies": {
-    "bcrypt": "^3.0.6",
+    "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "cloudinary": "^1.16.0",
     "dotenv": "^8.2.0",
